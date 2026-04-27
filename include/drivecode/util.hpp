@@ -1,6 +1,4 @@
 #include "main.h"
-#include "intake.hpp"
-#include "pistons.hpp"
 #include "drivecode/objects.hpp"
 
 //begin all tasks

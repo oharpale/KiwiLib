@@ -9,19 +9,18 @@ void lemlib::Chassis::moveUntilDistance(char dir, float exitDist, float x, float
 
     //pick active dist sensor for side
     DistResetSensors* distSensor = nullptr;
-    if(dir == 'L') {
-        distSensor = &distSensors.frontLeft;
-    } else if(dir == 'R') {
-        distSensor = &distSensors.right;
+    if(dir == 'F') {
+        distSensor = &distSensors.front;
+    } else if(dir == 'B') {
+        distSensor = &distSensors.back;
     }
 
-    //TODO: adds distance sensor offset Y
     //delay until distance sensor detects exitDist inches or motion is complete
-    while(mmToIn(distSensor->distance.get()) + distSensor->offsetY > exitDist && this->isInMotion()) {
+    while(mmToIn(distSensor->distance.get()) > exitDist && this->isInMotion()) {
         pros::delay(10);
     }
 
-    this->endMotion();
+    this->endMotion(); //TODO: test if this works
     this->drivetrain.leftMotors->move_velocity(0);
     this->drivetrain.rightMotors->move_velocity(0);
 }
