@@ -21,3 +21,5 @@ void auroraAuto();
 
 void nineBallLeft();
 void nineBallRight();
+
+void novice();

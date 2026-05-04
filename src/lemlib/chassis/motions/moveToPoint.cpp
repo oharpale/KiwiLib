@@ -52,9 +52,9 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         const float distTarget = pose.distance(target);
 
         // check if the robot is close enough to the target to start settling
-        if (distTarget < 7.5 && close == false) { //TODO: close distance 7.5 again???
+        if (distTarget < 7.5 && close == false) {
             close = true;
-            // params.maxSpeed = fmax(fabs(prevLateralOut), 60); //TODO: removed
+            params.maxSpeed = fmax(fabs(prevLateralOut), 60);
         }
 
         // motion chaining
@@ -105,12 +105,10 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         if (!params.forwards && -lateralOut < fabs(params.minSpeed) && lateralOut < 0)
             lateralOut = -fabs(params.minSpeed);
 
-        // preserve lateral to angular ratio //TODO: new overturn
+        
         float total = fabs(lateralOut) + fabs(angularOut);
         if(total > params.maxSpeed) {
-            float scale = params.maxSpeed / total;
-            lateralOut *= scale;
-            angularOut *= scale;
+            //TODO: difference overturn
         }
 
         // update previous output
