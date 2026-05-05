@@ -60,7 +60,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
 
         // check if the robot is close enough to the target to start settling
         if (distTarget < 7.5 && close == false) {
-            close = true;
+            close = true; //TODO: see mtpoint
         }
 
         // check if the lateral controller has settled
@@ -106,7 +106,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         // lateralOut *= cosDamper;
 
         // apply restrictions on angular speed
-        angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
+        angularOut = std::clamp(angularOut, -127.0f, 127.0f); //TODO: see mtpoint
 
         // apply restrictions on lateral speed
         lateralOut = std::clamp(lateralOut, -params.maxSpeed, params.maxSpeed);
@@ -120,7 +120,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         const float maxSlipSpeed(sqrt(params.horizontalDrift * radius));
         lateralOut = std::clamp(lateralOut, -maxSlipSpeed, maxSlipSpeed);
         
-        //TODO: removed old overturn
+        // //*old overturn
         // // prioritize angular movement over lateral movement
         // const float overturn = fabs(angularOut) + fabs(lateralOut) - params.maxSpeed;
         // if (overturn > 0) lateralOut -= lateralOut > 0 ? overturn : -overturn;
@@ -134,28 +134,34 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         if (!params.forwards && -lateralOut < fabs(params.minSpeed) && lateralOut < 0)
             lateralOut = -fabs(params.minSpeed);
 
-        // preserve lateral to angular ratio //TODO: new overturn
-        float total = fabs(lateralOut) + fabs(angularOut);
-        if(total > params.maxSpeed) {
-            float scale = params.maxSpeed / total;
-            lateralOut *= scale;
-            angularOut *= scale;
-        }
-
         // update previous output
         prevAngularOut = angularOut;
         prevLateralOut = lateralOut;
 
         infoSink()->debug("lateralOut: {} angularOut: {}", lateralOut, angularOut);
 
-        // ratio the speeds to respect the max speed
+        //TODO: subtractive overturn
         float leftPower = lateralOut + angularOut;
         float rightPower = lateralOut - angularOut;
-        const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
-        if (ratio > 1) {
-            leftPower /= ratio;
-            rightPower /= ratio;
+        float hiPower = std::max(std::fabs(leftPower), std::fabs(rightPower));
+
+        if(hiPower > params.maxSpeed) { //127 maxSpeed default
+            float diff = params.maxSpeed - hiPower;
+            lateralOut > 0 ? lateralOut -= diff : lateralOut += diff;
         }
+
+        leftPower = lateralOut + angularOut;
+        rightPower = lateralOut - angularOut;
+
+        // //* old ratio
+        // // ratio the speeds to respect the max speed
+        // float leftPower = lateralOut + angularOut;
+        // float rightPower = lateralOut - angularOut;
+        // const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
+        // if (ratio > 1) {
+        //     leftPower /= ratio;
+        //     rightPower /= ratio;
+        // }
 
         // move the drivetrain
         drivetrain.leftMotors->move(leftPower);

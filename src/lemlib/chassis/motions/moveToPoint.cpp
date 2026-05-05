@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include "lemlib/chassis/chassis.hpp"
 #include "lemlib/logger/logger.hpp"
@@ -52,9 +53,8 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         const float distTarget = pose.distance(target);
 
         // check if the robot is close enough to the target to start settling
-        if (distTarget < 7.5 && close == false) { //TODO: close distance 7.5 again???
+        if (distTarget < 7.5 && close == false) { //TODO: close distance 7.5
             close = true;
-            // params.maxSpeed = fmax(fabs(prevLateralOut), 60); //TODO: removed
         }
 
         // motion chaining
@@ -79,19 +79,13 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         float lateralOut = lateralPID.update(lateralError, true);
         float angularOut = angularPID.update(radToDeg(angularError), false);
         if (close) angularOut = 0;
-
-        // //cosine damper //TODO: cosine damper
-        // const float cosDamper = fabs(std::cos(angularError));
-        // lateralOut *= cosDamper;
         
         // apply restrictions on angular speed
-        angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
-        //*angular out will be -127 or 127
+        angularOut = std::clamp(angularOut, -127.0f, 127.0f); //TODO: angular output clamped only by robot limits
         angularOut = slew(angularOut, prevAngularOut, angularSettings.slew);
 
         // apply restrictions on lateral speed
         lateralOut = std::clamp(lateralOut, -params.maxSpeed, params.maxSpeed);
-        //*lateral out will be -127 or 127
         // constrain lateral output by max accel
         // but not for decelerating, since that would interfere with settling
         if (!close) lateralOut = slew(lateralOut, prevLateralOut, lateralSettings.slew);
@@ -105,28 +99,34 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         if (!params.forwards && -lateralOut < fabs(params.minSpeed) && lateralOut < 0)
             lateralOut = -fabs(params.minSpeed);
 
-        // preserve lateral to angular ratio //TODO: new overturn
-        float total = fabs(lateralOut) + fabs(angularOut);
-        if(total > params.maxSpeed) {
-            float scale = params.maxSpeed / total;
-            lateralOut *= scale;
-            angularOut *= scale;
-        }
-
         // update previous output
         prevAngularOut = angularOut;
         prevLateralOut = lateralOut;
 
         infoSink()->debug("Angular Out: {}, Lateral Out: {}", angularOut, lateralOut);
 
-        // ratio the speeds to respect the max speed
+        //TODO: subtractive overturn
         float leftPower = lateralOut + angularOut;
         float rightPower = lateralOut - angularOut;
-        const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
-        if (ratio > 1) {
-            leftPower /= ratio;
-            rightPower /= ratio;
+        float hiPower = std::max(std::fabs(leftPower), std::fabs(rightPower));
+
+        if(hiPower > params.maxSpeed) { //127 maxSpeed default
+            float diff = params.maxSpeed - hiPower;
+            lateralOut > 0 ? lateralOut -= diff : lateralOut += diff;
         }
+
+        leftPower = lateralOut + angularOut;
+        rightPower = lateralOut - angularOut;
+
+        // //*old ratio
+        // // ratio the speeds to respect the max speed
+        // float leftPower = lateralOut + angularOut;
+        // float rightPower = lateralOut - angularOut;
+        // const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
+        // if (ratio > 1) {
+        //     leftPower /= ratio;
+        //     rightPower /= ratio;
+        // }
 
         // move the drivetrain
         drivetrain.leftMotors->move(leftPower);
