@@ -101,22 +101,22 @@ void lemlib::update() {
     prevImu = imuRaw;
 
     // calculate the heading of the robot
-    // Priority:
-    // 1. Horizontal tracking wheels
+    // TODO: Priority:
+    // 1. IMU
+    // 2. Horiz tracking wheels
     // 2. Vertical tracking wheels
-    // 3. Inertial Sensor
     // 4. Drivetrain
     float heading = odomPose.theta;
-    // calculate the heading using the horizontal tracking wheels
-    if (odomSensors.horizontal1 != nullptr && odomSensors.horizontal2 != nullptr)
+    //if the inertial sensor exists, use it
+    if (odomSensors.imu != nullptr) heading += deltaImu;
+    // else, calculate the heading using the horizontal tracking wheels
+    else if (odomSensors.horizontal1 != nullptr && odomSensors.horizontal2 != nullptr)
         heading -= (deltaHorizontal1 - deltaHorizontal2) /
                    (odomSensors.horizontal1->getOffset() - odomSensors.horizontal2->getOffset());
     // else, if both vertical tracking wheels aren't substituted by the drivetrain, use the vertical tracking wheels
     else if (!odomSensors.vertical1->getType() && !odomSensors.vertical2->getType())
         heading -= (deltaVertical1 - deltaVertical2) /
                    (odomSensors.vertical1->getOffset() - odomSensors.vertical2->getOffset());
-    // else, if the inertial sensor exists, use it
-    else if (odomSensors.imu != nullptr) heading += deltaImu;
     // else, use the the substituted tracking wheels
     else
         heading -= (deltaVertical1 - deltaVertical2) /
@@ -124,28 +124,46 @@ void lemlib::update() {
     float deltaHeading = heading - odomPose.theta;
     float avgHeading = odomPose.theta + deltaHeading / 2;
 
-    // choose tracking wheels to use
-    // Prioritize non-powered tracking wheels
+    // create tracking wheels
     lemlib::TrackingWheel* verticalWheel = nullptr;
     lemlib::TrackingWheel* horizontalWheel = nullptr;
+    lemlib::TrackingWheel* driveSide1 = nullptr;
+    lemlib::TrackingWheel* driveSide2 = nullptr;
+
+    // choose vertical wheel //TODO: check boolean activation
     if (!odomSensors.vertical1->getType()) verticalWheel = odomSensors.vertical1;
     else if (!odomSensors.vertical2->getType()) verticalWheel = odomSensors.vertical2;
-    else verticalWheel = odomSensors.vertical1;
+    else { //if no vert tracking wheels, use drive
+        driveSide1 = odomSensors.vertical1;//TODO: vertical odom
+        driveSide2 = odomSensors.vertical2; 
+    }
+
+    // choose horiz wheel
     if (odomSensors.horizontal1 != nullptr) horizontalWheel = odomSensors.horizontal1;
     else if (odomSensors.horizontal2 != nullptr) horizontalWheel = odomSensors.horizontal2;
+    
+    // get raw vals
     float rawVertical = 0;
     float rawHorizontal = 0;
+    
     if (verticalWheel != nullptr) rawVertical = verticalWheel->getDistanceTraveled();
+    else rawVertical = (driveSide1->getDistanceTraveled() + driveSide2->getDistanceTraveled()) / 2.0;
+
     if (horizontalWheel != nullptr) rawHorizontal = horizontalWheel->getDistanceTraveled();
+
+    //get offsets
     float horizontalOffset = 0;
     float verticalOffset = 0;
+    
     if (verticalWheel != nullptr) verticalOffset = verticalWheel->getOffset();
+    else verticalOffset = 0;
+
     if (horizontalWheel != nullptr) horizontalOffset = horizontalWheel->getOffset();
 
     // calculate change in x and y
     float deltaX = 0;
     float deltaY = 0;
-    if (verticalWheel != nullptr) deltaY = rawVertical - prevVertical;
+    if (verticalWheel != nullptr || driveSide1 != nullptr) deltaY = rawVertical - prevVertical; //TODO: technically unnecessary
     if (horizontalWheel != nullptr) deltaX = rawHorizontal - prevHorizontal;
     prevVertical = rawVertical;
     prevHorizontal = rawHorizontal;
