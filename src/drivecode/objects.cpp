@@ -72,7 +72,7 @@ lemlib::ControllerSettings lateralController(
 
 lemlib::ControllerSettings angularController(4.5, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              25, // derivative gain (kD)
+                                              27.5, // derivative gain (kD)
                                               5, // anti windup
                                               2, // small error range, in inches
                                               50, // small error range timeout, in milliseconds

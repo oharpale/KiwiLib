@@ -38,7 +38,19 @@ void opcontrol() {
 		//updatePistons();
 		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
 			chassis.setPose(0,0,0); 
+			chassis.turnToHeading(45, 1000);
+		}
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
+			chassis.setPose(0,0,0); 
 			chassis.turnToHeading(90, 1000);
+		}
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+			chassis.setPose(0,0,0); 
+			chassis.turnToHeading(180, 1000);
+		}
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+			chassis.setPose(0,0,0); 
+			chassis.turnToHeading(360, 1000);
 		}
 		//drive
 		int throttle = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
