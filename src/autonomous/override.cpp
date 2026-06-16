@@ -45,4 +45,3 @@ void override() {
     chassis.moveDistance(28, 1000, {.minSpeed = 80, .earlyExitRange= 1});
     chassis.moveDistance(32, 1000, {.earlyExitRange= 1});
 }
-
