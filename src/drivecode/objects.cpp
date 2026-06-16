@@ -82,6 +82,35 @@ lemlib::ControllerSettings angularController(
     0
 );
 
+/*
+David's PID
+Please do not touch :)
+
+//controller settings
+lemlib::ControllerSettings lateralController(
+    10,                           //kP
+    0,                         //kI
+    56,                           //kD
+    4,                   //windup range
+    0.5,                    //small error
+    50,           //small error timeout
+    0,                    //large error 
+    500,           //large error timeout
+    0                           //slew
+);
+
+lemlib::ControllerSettings angularController(4.5, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              27.5, // derivative gain (kD)
+                                              5, // anti windup
+                                              2, // small error range, in inches
+                                              50, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
+);
+*/
+
 //distance sensors
 lemlib::DistanceSensors distSensors(distFrontLeft, -4.13, 5.27,
                                     distFrontRight, 4.13, 5.27,
